@@ -197,6 +197,12 @@ class TestApplicationInformation(BaseGBAPITestCase):
         g = str(res)
         self.assertTrue(len(g) > 10)
 
+class TestLocalFileSource(BaseGBAPITestCase):
+    def test_get_local_file_sources(self):
+        gb = GBAPI(None, None, source_file = '../data/gb_xml/51.xml')
+        res = gb.get_LocalTimeParameters('01')
+        self.assertEqual(res.element_type, "LocalTimeParameters")
+
 if __name__ == "__main__":
     unittest.main()
 

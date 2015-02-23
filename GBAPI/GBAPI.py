@@ -1,9 +1,21 @@
+#!/usr/bin/env python
+"GBAPI library and GBXML parser"
+
 import re
 import datetime
 
 from requests_oauthlib import OAuth2Session
 from xml.etree import ElementTree
 from xml.dom import minidom
+
+__author__ = "Clay Teeter"
+__copyright__ = "Copyright 2015, Maalka.com"
+__credits__ = []
+__license__ = "GPL"
+__version__ = "0.1.1"
+__maintainer__ = "Clay Teeter"
+__email__ = "teeterc@gmail.com"
+__status__ = "Beta"
 
 class RequestFailedException(Exception):
     pass
@@ -298,7 +310,7 @@ class GBAPIElectricPowerUsageSummary(GBAPIObjectEntity):
 class GBAPI(object):
     __GB_Request = None
     def __init__(self, access_token, baseurl, source_file = None):
-        if (not (source_file is None and (access_token is not None and baseurl is not None))):
+        if (source_file is None and (access_token is None or baseurl is None)):
             raise Exception("You must specify an access_token and baseurl if source_file is not specified")
 
         self.__BASEURL = baseurl
@@ -465,5 +477,4 @@ class GBAPI(object):
         if g.element_type != "feed":
             return g.elements[0]
         return g
-
 
