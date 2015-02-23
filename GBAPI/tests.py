@@ -119,7 +119,6 @@ class TestBatch(BaseGBAPITestCase):
         self.assertTrue(len(res.elements) > 0)
     def test_get_batch_with_retail_customer_and_usage(self):
         res = self.GBAPI.get_Batch(retail_customer_id=1, usage_point_id = 1)
-        print res
         self.assertTrue(len(res.elements) > 0)
 
 class TestIntervalBlock(BaseGBAPITestCase):

@@ -60,7 +60,11 @@ class GBAPIObject(object):
     def follow(self, link_key):
         if not self.__links.has_key(link_key):
             raise Exception("Can't follow %s" % link_key)
-        return self.gbapi._generic_request(self.__links[link_key], absolute = True)
+        if self.gbapi is None:
+            raise Exception("No GBAPI object attached")
+        else:
+            return self.gbapi._generic_request(self.__links[link_key], absolute = True)
+    
     
     def __parse_header(self):
         for tag in self.__header_tags:
@@ -293,13 +297,20 @@ class GBAPIElectricPowerUsageSummary(GBAPIObjectEntity):
 
 class GBAPI(object):
     __GB_Request = None
-    def __init__(self, access_token, baseurl):
+    def __init__(self, access_token, baseurl, source_file = None):
+        if (not (source_file is None and (access_token is not None and baseurl is not None))):
+            raise Exception("You must specify an access_token and baseurl if source_file is not specified")
+
         self.__BASEURL = baseurl
         self.__TOKEN = access_token
-        self.__GB_Request = OAuth2Session(r'clientid', token = self.__TOKEN)
+        if (source_file == None):
+            self.__GB_Request = OAuth2Session(r'clientid', token = self.__TOKEN)
+        else:
+            self.__GB_Request = None
+        self.__source_file = source_file
 
     def get_ApplicationInformation(self, application_information_id = None):
-        path = "/espi/1_1/resource/ApplicationInformation"
+        path = "ApplicationInformation"
 
         if application_information_id is not None:
             path = "/".join([path, str(application_information_id)])
@@ -317,16 +328,16 @@ class GBAPI(object):
         pass
 
     def get_UsagePoint(self, usage_point_id=None, subscription_id=None):
-        path = "/espi/1_1/resource/UsagePoint"
+        path = "UsagePoint"
 
         if usage_point_id is not None and subscription_id is not None:
-            path = "/espi/1_1/resource/Subscription/%s/UsagePoint/%s" % (subscription_id, usage_point_id)
+            path = "Subscription/%s/UsagePoint/%s" % (subscription_id, usage_point_id)
         elif usage_point_id is None and subscription_id is not None:
-            path = "/espi/1_1/resource/Subscription/%s/UsagePoint" % (subscription_id,)
+            path = "Subscription/%s/UsagePoint" % (subscription_id,)
         elif usage_point_id is None and subscription_id is None:
-            path = "/espi/1_1/resource/UsagePoint"
+            path = "UsagePoint"
         elif usage_point_id is not None and subscription_id is None:
-            path = "/espi/1_1/resource/UsagePoint/%s" % usage_point_id
+            path = "UsagePoint/%s" % usage_point_id
         else:
             raise Exception
 
@@ -334,7 +345,7 @@ class GBAPI(object):
         return g
 
     def get_ReadingType(self, reading_type_id=None):
-        path = "/espi/1_1/resource/ReadingType"
+        path = "ReadingType"
 
         if reading_type_id is not None:
             path = "/".join([path, str(reading_type_id)])
@@ -343,8 +354,8 @@ class GBAPI(object):
         return g
 
     def get_MeterReading(self, meter_reading_id=None,usage_point_id=None, subscription_id=None):
-        path = "/espi/1_1/resource/MeterReading"
-        path_2 = "/espi/1_1/resource/Subscription/%s" % subscription_id
+        path = "MeterReading"
+        path_2 = "Subscription/%s" % subscription_id
 
         if subscription_id is not None and usage_point_id is not None and meter_reading_id is None:
             path = "/".join([path_2, 'UsagePoint', str(usage_point_id), 'MeterReading'])
@@ -359,7 +370,7 @@ class GBAPI(object):
         return g
 
     def get_LocalTimeParameters(self, local_time_parameter_id=None):
-        path = "/espi/1_1/resource/LocalTimeParameters"
+        path = "LocalTimeParameters"
 
         if local_time_parameter_id is not None:
             path = "/".join([path, str(local_time_parameter_id)])
@@ -368,7 +379,7 @@ class GBAPI(object):
         return g
 
     def get_IntervalBlock(self, subscription_id=None, usage_point_id=None, meter_reading_id = None, interval_block_id = None):
-        path = "/espi/1_1/resource"
+        path = ""
         if subscription_id is not None and usage_point_id is not None and meter_reading_id is not None and interval_block_id is not None:
             path += "/Subscription/%s/UsagePoint/%s/MeterReading/%s/IntervalBlock/%s" % (subscription_id, 
                                                                                          usage_point_id, 
@@ -392,7 +403,7 @@ class GBAPI(object):
         return g
 
     def get_ElectricPowerUsageSummary(self, subscription_id, usage_point, electric_power_usage_summary_id=None):
-        path = "/espi/1_1/resource/Subscription/%s/UsagePoint/%s/ElectricPowerUsageSummary" % (subscription_id, usage_point)
+        path = "Subscription/%s/UsagePoint/%s/ElectricPowerUsageSummary" % (subscription_id, usage_point)
 
         if electric_power_usage_summary_id is not None:
             path = "/".join([path, str(electric_power_usage_summary_id)])
@@ -402,7 +413,7 @@ class GBAPI(object):
 
         
     def get_ElectricPowerQualitySummary(self, subscription_id, usage_point, electric_power_quality_summary_id=None):
-        path = "/espi/1_1/resource/Subscription/%s/UsagePoint/%s/ElectricPowerQualitySummary" % (subscription_id, usage_point)
+        path = "Subscription/%s/UsagePoint/%s/ElectricPowerQualitySummary" % (subscription_id, usage_point)
 
         if electric_power_quality_summary_id is not None:
             path = "/".join([path, str(electric_power_quality_summary_id)])
@@ -410,31 +421,46 @@ class GBAPI(object):
         return g
 
     def get_Batch(self, bulk_id = None, subscription_id = None, retail_customer_id = None, usage_point_id = None):
+        ## TODO, implement this
         if bulk_id is not None:
-            path = "/espi/1_1/resource/Batch/Bulk/%s" % builk_id
+            path = "Batch/Bulk/%s" % builk_id
         elif subscription_id is not None:
-            path = "/espi/1_1/resource/Batch/Subscription/%s" % subscription_id
+            path = "Batch/Subscription/%s" % subscription_id
         elif retail_customer_id is not None and usage_point_id is not None:
-            path = "/espi/1_1/resource/Batch/RetailCustomer/%s/UsagePoint/%s" % (retail_customer_id, usage_point_id)
+            path = "Batch/RetailCustomer/%s/UsagePoint/%s" % (retail_customer_id, usage_point_id)
         elif retail_customer_id is not None:
-            path = "/espi/1_1/resource/Batch/RetailCustomer/%s/UsagePoint" % retail_customer_id
-
+            path = "Batch/RetailCustomer/%s/UsagePoint" % retail_customer_id
         else:
             raise Exception
 
         g = self._generic_request(path)
         return g
 
+    def load_entire_file(self):
+        ## most get opperations will work on static files, this is just a convience function
+        ## to return all entries...  
+        et = ElementTree.parse(self.__source_file).getroot()
+        return [GBAPIObject(self, x) for x in et.findall("{%s}entry" % NAMESPACES['ns3'])]
+
     def _generic_request(self, path, absolute = False):
-        if absolute: 
-            response = self.__GB_Request.get(path)
+        if self.__source_file is None:
+            if absolute: 
+                response = self.__GB_Request.get(path)
+            else:
+                path = "/espi/1_1/resource/%s" % (path,) 
+                response = self.__GB_Request.get("%s%s" % (self.__BASEURL, path))
+            if response.status_code != 200:
+                raise RequestFailedException()
+            et = ElementTree.fromstring(response.text)
         else:
-            response = self.__GB_Request.get("%s%s" % (self.__BASEURL, path))
-
-        if response.status_code != 200:
-            raise RequestFailedException()
-
-        et = ElementTree.fromstring(response.text)
+            et = ElementTree.parse(self.__source_file).getroot()
+            et_filtered = et.find("{%(ns)s}entry/{%(ns)s}link[@rel='self'][@href='%(path)s'].." % {'ns': NAMESPACES['ns3'], 
+                                                                                                     'path': path})
+            if et_filtered is None:
+                return [GBAPIObject(self, x) 
+                        for x in et.findall("{%(ns)s}entry/{%(ns)s}link[@rel='up'][@href='%(path)s'].." % {'ns': NAMESPACES['ns3'], 
+                                                                                                                                'path': path})]
+            et = et_filtered
         g = GBAPIObject(self, et)
         if g.element_type != "feed":
             return g.elements[0]
